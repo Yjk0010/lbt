@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>大图滚动</title>
+	<style>
+		*{
+			margin:0;
+			padding:0;
+		}
+		#outer{
+			width: 800px;
+			height: 500px;
+			margin:100px auto;
+			overflow: hidden;
+			position: relative;
+		}
+		#inner{
+			height: 500px;
+			position: absolute;
+			left: 0;
+			top: 0;
+			/* transition: all 0.5s; */
+		}
+		#inner img{
+			float: left;
+			width: 800px;
+			height: 500px;
+		}
+		#btn-box{
+			width: 100%;
+			position: absolute;
+			left: 0;
+			bottom: 10px;
+			text-align: center;
+		}
+		#btn-box span{
+			display: inline-block;
+			width: 30px;
+			height: 30px;
+			border-radius: 50%;
+			background-color: #fff;
+			text-align: center;
+			line-height: 30px;
+			font-size: 18px;
+			cursor: pointer;
+		}
+		#btn-box span.active{
+			color: #fff;
+			background-color: red;
+		}
+		#nextBtn,#prevBtn{
+			position: absolute;
+			height: 100%;
+			width: 50px;
+			background-color: rgba(0,0,0,.5);
+			text-align: center;
+			line-height: 500px;
+			font-size: 40px;
+			color: #fff;
+			opacity: 0;
+			transition: all 0.5s;
+			cursor: pointer;
+		}
+		#nextBtn{
+			right: 0;
+		}
+		#prevBtn{
+			left: 0;
+		}
+	</style>
+
+</head>
+<body>
+	<div id="outer">
+		<div id="inner">
+			<img src="img/1.jpg" alt="">
+			<img src="img/2.jpg" alt="">
+			<img src="img/3.jpg" alt="">
+			<img src="img/4.jpg" alt="">
+			<img src="img/5.jpg" alt="">
+			<img src="img/6.jpg" alt="">
+			<img src="img/1.jpg" alt="">
+		</div>
+		<p id="btn-box">
+			<span class="active">1</span>
+			<span>2</span>
+			<span>3</span>
+			<span>4</span>
+			<span>5</span>
+			<span>6</span>
+		</p>
+		<div id="nextBtn">&gt;</div>
+		<div id="prevBtn">&lt;</div>
+	</div>
+	<script src="js/tween.js"></script>
+	<script>
+		var outer = document.getElementById('outer');
+		var imgs = document.getElementsByTagName('img');
+		var inner = document.getElementById('inner');
+		var btnbox = document.getElementById('btn-box');
+		var btns = btnbox.getElementsByTagName('span');
+		var nextBtn = document.getElementById('nextBtn');
+		var prevBtn = document.getElementById('prevBtn');
+
+		// 根据图片数量设置inner的宽度
+		var pieceWhidth = imgs[0].offsetWidth;
+		inner.style.width = pieceWhidth * imgs.length + 'px';
+		var time = null;//图片自动切换计时器
+		var time1 = null;//图片滑动计时器
+		var control = true;//定义一个布尔值用来控制切换的时机（图片滚动过程中禁止切换）
+		// 定义变量，控制图片的切换
+		var index = 0;
+		// 通过index变化来控制图片变化,创建tab函数 调用时更改inner的lift值
+		function tab(){
+			// 判断index的变化范围
+			clearInterval(time);
+			/*if (index >= imgs.length) {
+				index = 0;
+			}
+			if (index < 0) {
+				index = imgs.length-1;
+			}*/
+			var t = 0;//初始步数
+			var maxT = 80;//总步数
+			var start = inner.offsetLeft;//初始位置
+			var end = - pieceWhidth * index;//结束位置
+			var change = end - start;//计算总路程
+			clearInterval(time1);
+			time1 = setInterval(function(){
+				t++;
+				if (t >= maxT) {
+					clearInterval(time1);
+				}
+				// inner.style.left = change/maxT * t + start + 'px';//change/maxT每一步的距离 change/maxT * t + start为当前移动的距离
+				inner.style.left = Tween.Bounce.easeOut(t,start,change,maxT) + 'px';
+				control = true;
+			},10);
+			//在滚动动画执行完毕时候，将control变回true，即可继续切换
+			
+
+			// 切换按钮
+			for (var i = 0; i < btns.length; i++) {
+				// 清除按钮样式
+				btns[i].className = '';
+				/*btns[index].className = 'active';*/
+			}
+			if (index == btns.length) {
+				btns[0].className = 'active';
+			} else {
+				btns[index].className = 'active';
+			}
+
+			time = setInterval(next,2000);
+		}
+		// 创建切换下一张函数的图片
+		function next(){
+			index++;
+			if (index >= imgs.length) {
+				inner.style.left = 0;
+				index = 1;
+			}
+			tab();
+		}
+		function prev(){
+			index--;
+			if (index < 0) {
+				inner.style.left = -pieceWhidth * btns.length + 'px';
+				index = btns.length-1;
+			}
+			tab();
+		}
+		// 设置计时器，反复执行next函数，实现图片自动切换
+		time = setInterval(next,2000);
+
+		// 给每一个按钮绑定点击事件
+		for (var i = 0; i < btns.length; i++) {
+			btns[i].index = i;
+			btns[i].onclick = function(){
+				index = this.index;//index发生改变执行tab会
+				tab();
+			}
+		}
+		outer.onmouseover = function(){
+			nextBtn.style.opacity = 1;
+			prevBtn.style.opacity = 1;
+		}
+		outer.onmouseout = function(){
+			nextBtn.style.opacity = 0;
+			prevBtn.style.opacity = 0;
+		}
+		nextBtn.onclick = function(){
+			if (control) {next();}
+			control = false; 
+		}
+		prevBtn.onclick = function(){
+			if (control) {prev();}
+			control = false;
+		}
+	</script>
+</body>
+</html>
